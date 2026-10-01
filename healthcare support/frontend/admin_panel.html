@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Healthcare Support</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="admin-header">
+            <h1>Admin Panel</h1>
+            <div class="admin-nav">
+                <a href="{{ url_for('add_camp') }}" class="btn btn-primary">Add New Camp</a>
+                <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">Logout</a>
+            </div>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <section class="camps-section">
+            <h2>Health Camps</h2>
+            {% if camps %}
+                <div class="camps-grid">
+                    {% for camp in camps %}
+                        <div class="camp-card">
+                            <h3>{{ camp.name }}</h3>
+                            <p><strong>Date:</strong> {{ camp.date }}</p>
+                            <p><strong>Time:</strong> {{ camp.time }}</p>
+                            <p><strong>Location:</strong> {{ camp.location }}</p>
+                            <p><strong>Available Slots:</strong> {{ camp.availableSlots }}</p>
+                            <div class="camp-actions">
+                                <a href="{{ url_for('edit_camp', camp_id=camp._id) }}" class="btn btn-small">Edit</a>
+                                <form method="POST" action="{{ url_for('delete_camp_route', camp_id=camp._id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-small btn-danger" onclick="return confirm('Delete this camp?')">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No camps found.</p>
+            {% endif %}
+        </section>
+        
+        <section class="bookings-section">
+            <h2>Recent Bookings</h2>
+            {% if bookings %}
+                <div class="bookings-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Camp ID</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in bookings %}
+                                <tr>
+                                    <td>{{ booking.name }}</td>
+                                    <td>{{ booking.phone }}</td>
+                                    <td>{{ booking.email }}</td>
+                                    <td>{{ booking.campId[:8] }}</td>
+                                    <td>{{ booking.createdAt.strftime('%Y-%m-%d') if booking.createdAt else 'N/A' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p>No bookings found.</p>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>

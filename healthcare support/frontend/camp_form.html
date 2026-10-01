@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ action }} Camp - Healthcare Support</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>{{ action }} Health Camp</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" class="camp-form">
+            <div class="form-group">
+                <label for="name">Camp Name:</label>
+                <input type="text" id="name" name="name" value="{{ camp.name if camp else '' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" value="{{ camp.date if camp else '' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="time">Time:</label>
+                <input type="time" id="time" name="time" value="{{ camp.time if camp else '' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="location">Location:</label>
+                <input type="text" id="location" name="location" value="{{ camp.location if camp else '' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="services">Services (comma-separated):</label>
+                <input type="text" id="services" name="services" value="{{ camp.services|join(', ') if camp and camp.services else '' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" rows="4">{{ camp.description if camp else '' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="availableSlots">Available Slots:</label>
+                <input type="number" id="availableSlots" name="availableSlots" value="{{ camp.availableSlots if camp else '' }}" min="1" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">{{ action }} Camp</button>
+            <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</body>
+</html>

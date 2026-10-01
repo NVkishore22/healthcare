@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Camps - Smart Healthcare Support</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-heartbeat"></i>
+                <span>Smart Healthcare</span>
+            </div>
+            <div class="nav-menu">
+                <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('view_camps') }}" class="nav-link">Health Camps</a>
+                {% if session.admin_logged_in %}
+                    <a href="{{ url_for('admin_panel') }}" class="admin-btn">Admin Panel</a>
+                    <a href="{{ url_for('admin_logout') }}" class="nav-link">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('admin_login') }}" class="admin-btn">Admin Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="messages">
+                {% for category, message in messages %}
+                    <div class="message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <section class="camps-section">
+        <div class="container">
+            <h2>Upcoming Health Camps</h2>
+            
+            {% if camps %}
+                <div class="camps-grid">
+                    {% for camp in camps %}
+                        <div class="camp-card">
+                            <div class="camp-header">
+                                <div class="camp-name">{{ camp.name }}</div>
+                                <div class="camp-date">{{ camp.date }}</div>
+                            </div>
+                            <div class="camp-details">
+                                <div class="camp-detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>{{ camp.time }}</span>
+                                </div>
+                                <div class="camp-detail">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>{{ camp.location }}</span>
+                                </div>
+                                <div class="camp-detail">
+                                    <i class="fas fa-users"></i>
+                                    <span>{{ camp.availableSlots }} slots available</span>
+                                </div>
+                            </div>
+                            {% if camp.description %}
+                                <p class="camp-description">{{ camp.description }}</p>
+                            {% endif %}
+                            <div class="camp-services">
+                                {% for service in camp.services %}
+                                    <span class="service-tag">{{ service }}</span>
+                                {% endfor %}
+                            </div>
+                            {% if camp.availableSlots > 0 %}
+                                <a href="{{ url_for('book_appointment', camp_id=camp._id) }}" class="book-btn">Book Appointment</a>
+                            {% else %}
+                                <button class="book-btn" disabled>Fully Booked</button>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-camps">No health camps available at the moment.</p>
+            {% endif %}
+        </div>
+    </section>
+</body>
+</html>
