@@ -1,35 +1,81 @@
-name: Deploy HTML CSS Website
+name: CI/CD Reliability Pipeline
 
 on:
   push:
-    branches:
-      - main
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
 
 jobs:
-  deploy:
+  build-and-test:
     runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
+      - name: Record build start time
+        id: timer
+        run: echo "start=$(date +%s)" >> $GITHUB_OUTPUT
 
-      - name: Upload website
-        uses: actions/upload-pages-artifact@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          path: .
+          python-version: "3.11"
+          cache: "pip"
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        id: tests
+        run: python -m pytest tests/ -v --tb=short --json-report --json-report-file=test_report.json
+        continue-on-error: true
+
+      - name: Export build metadata
+        if: always()
+        run: |
+          END=$(date +%s)
+          START=${{ steps.timer.outputs.start }}
+          DURATION=$((END - START))
+          FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | wc -l || echo 0)
+          LINES=$(git diff --stat HEAD~1 HEAD 2>/dev/null | grep -oP '\d+ insertion' | grep -oP '\d+' || echo 0)
+          FAILED=$(python -c "import json; r=json.load(open('test_report.json')); print(r.get('summary',{}).get('failed',0))" 2>/dev/null || echo 0)
+          OUTCOME="${{ steps.tests.outcome }}"
+          STATUS="success"
+          if [ "$OUTCOME" != "success" ]; then STATUS="failure"; fi
+
+          mkdir -p build_artifacts
+          cat > build_artifacts/build_meta.json << EOF
+          {
+            "run_id":        "${{ github.run_id }}",
+            "run_number":    ${{ github.run_number }},
+            "commit_sha":    "$(echo ${{ github.sha }} | cut -c1-7)",
+            "branch":        "${{ github.ref_name }}",
+            "actor":         "${{ github.actor }}",
+            "status":        "$STATUS",
+            "duration_s":    $DURATION,
+            "files_changed": $FILES,
+            "lines_changed": $LINES,
+            "failed_tests":  $FAILED,
+            "timestamp":     "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+          cat build_artifacts/build_meta.json
+
+      - name: Upload build metadata artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-meta-${{ github.run_number }}
+          path: build_artifacts/build_meta.json
+          retention-days: 30
+
+      - name: Upload test report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ github.run_number }}
+          path: test_report.json
+          retention-days: 30
